@@ -58,7 +58,7 @@ namespace AccessibleTiles.Modules.GridMovement {
                 return;
             }
 
-            if (this.is_warping == true || is_moving || Game1.IsChatting || !Game1.player.canMove) return;
+            if (this.is_warping == true || is_moving || Game1.IsChatting || !Game1.player.CanMove || (Game1.CurrentEvent!=null && !Game1.CurrentEvent.canMoveAfterDialogue())) return;
 
             is_moving = true;
             timer.Start();
@@ -84,25 +84,31 @@ namespace AccessibleTiles.Modules.GridMovement {
 
             Mod.Output($"Move To: {tileLocation}");
 
-            Warp warp = location.isCollidingWithWarpOrDoor(new Microsoft.Xna.Framework.Rectangle((int)tileLocation.X * Game1.tileSize, (int)tileLocation.Y * Game1.tileSize, Game1.tileSize, Game1.tileSize));
-            if (warp != null) {
-
-                Mod.Output("Collides with Warp or Door");
-
-                if (location.checkAction(new Location((int)tileLocation.X * Game1.tileSize, (int)tileLocation.Y * Game1.tileSize), Game1.viewport, Game1.player)) {
-                    timer.Stop();
+            Rectangle position = new Microsoft.Xna.Framework.Rectangle((int)tileLocation.X * Game1.tileSize, (int)tileLocation.Y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
+            Warp warp = location.isCollidingWithWarpOrDoor(position, Game1.player);
+            if(warp != null) {
+                if (isDoorAtTile((int)tileLocation.X, (int)tileLocation.Y))
+                {
+                    // Manually check for door and pressActionButton() method instead of warping (warping also works when the door is locked, for example it warps to the Pierre's shop before it's opening time)
+                    Mod.Output("Collides with Door");
+                    Game1.pressActionButton(Game1.GetKeyboardState(), Game1.input.GetMouseState(), Game1.input.GetGamePadState());
                 } else {
+                    Mod.Output("Collides with Warp");
 
-                    //repurpose timer to wait a short period to prevent the player from spam warping
-                    //this prevents the door sound from going off multiple times
-                    //it also prevents the player from being locked up if a warp was unsuccessful
-                    timer.Stop();
-                    timer.Interval = 1000;
-                    timer.Start();
+                    if (location.checkAction(new Location((int)tileLocation.X * Game1.tileSize, (int)tileLocation.Y * Game1.tileSize), Game1.viewport, Game1.player)) {
+                        timer.Stop();
+                    } else {
+                        //repurpose timer to wait a short period to prevent the player from spam warping
+                        //this prevents the door sound from going off multiple times
+                        //it also prevents the player from being locked up if a warp was unsuccessful
+                        timer.Stop();
+                        timer.Interval = 1000;
+                        timer.Start();
 
-                    Game1.playSound("doorOpen");
-                    Game1.player.warpFarmer(warp);
-                    this.is_warping = true;
+                        Game1.playSound("doorOpen");
+                        Game1.player.warpFarmer(warp);
+                        this.is_warping = true;
+                    }
                 }
 
             } else {
@@ -120,6 +126,22 @@ namespace AccessibleTiles.Modules.GridMovement {
 
             CenterPlayer();
 
+        }
+
+        private Boolean isDoorAtTile(int x, int y)
+        {
+            Point tilePoint = new Point(x, y);
+            StardewValley.Network.NetPointDictionary<string, Netcode.NetString> doorList = Game1.currentLocation.doors;
+
+            for (int i = 0; i < doorList.Count(); i++)
+            {
+                if (doorList.ContainsKey(tilePoint))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         internal void PlayerWarped(object sender, WarpedEventArgs e) {
