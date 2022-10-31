@@ -21,6 +21,13 @@ namespace AccessibleTiles {
 
         public int? LastGridMovementDirection = null;
         public InputButton? LastGridMovementButtonPressed = null;
+ 
+        int previousDebris = -999;
+        int previousObjects = -999;
+        int previousFurniture = -999;
+        int previousResourceClumps = -999;
+        int previousTerrainFeatures = -999;
+        int previousLargeTerrainFeatures = -999;
 
         /*********
         ** Public methods
@@ -59,6 +66,29 @@ namespace AccessibleTiles {
                 SButton button = LastGridMovementButtonPressed.Value.ToSButton();
                 if (Game1.activeClickableMenu == null && this.Config.GridMovementActive && !GridMovement.is_moving && !this.Config.GridMovementOverrideKey.IsDown()  && (this.Helper.Input.IsDown(button) || this.Helper.Input.IsSuppressed(button))) {
                     GridMovement.HandleGridMovement(LastGridMovementDirection.Value, LastGridMovementButtonPressed.Value);
+                }
+            }
+            
+            // Automatically refreshes the object tracker when the number of objects in current map changes.
+            if (Game1.currentLocation != null && Config.OTAutoRefreshing)
+            {
+                int currentDebris = Game1.currentLocation.debris.Count;
+                int currentObjects = Game1.currentLocation.Objects.Count();
+                int currentFurniture = Game1.currentLocation.furniture.Count;
+                int currentResourceClumps = Game1.currentLocation.resourceClumps.Count;
+                int currentTerrainFeatures = Game1.currentLocation.terrainFeatures.Count();
+                int currentLargeTerrainFeatures = Game1.currentLocation.largeTerrainFeatures.Count;
+                
+                if (previousDebris != currentDebris || previousObjects != currentObjects || previousFurniture != currentFurniture || previousResourceClumps != currentResourceClumps || previousTerrainFeatures != currentTerrainFeatures || previousLargeTerrainFeatures != currentLargeTerrainFeatures) {
+                    previousDebris = currentDebris;
+                    previousObjects = currentObjects;
+                    previousFurniture = currentFurniture;
+                    previousResourceClumps = currentResourceClumps;
+                    previousTerrainFeatures = currentTerrainFeatures;
+                    previousLargeTerrainFeatures = currentLargeTerrainFeatures;
+                    
+                    Output("Refreshing object tracker...", false);
+                    ObjectTracker.GetLocationObjects(reset_focus: false);
                 }
             }
         }

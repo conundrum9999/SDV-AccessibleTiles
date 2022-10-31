@@ -37,6 +37,8 @@ namespace AccessibleTiles {
         public string OTReadSelectedObjectText { get; set; } = "{object} is {direction} {distance} at {objectX}-{objectY}, player at {playerX}-{playerY}";
 
         public string OTReadSelectedObjectTileText { get; set; } = "{object} at {objectX}-{objectY}, player at {playerX}-{playerY}";
+ 
+        public Boolean OTAutoRefreshing { get; set; } = true;
 
     }       
 }
