@@ -37,6 +37,12 @@ namespace AccessibleTiles.Modules.ObjectTracker {
                 this.AddObjects(SpecialPointsObjects.GetObjects());
             }
 
+            TTAnimals AnimalObjects = new TTAnimals();
+            if (AnimalObjects.HasObjects()) {
+                this.AddObjects(AnimalObjects.GetObjects());
+            }
+
+            /*
             TTCharacters CharacterObjects = new TTCharacters();
             if (CharacterObjects.HasObjects()) {
                 this.AddObjects(CharacterObjects.GetObjects());
@@ -47,16 +53,12 @@ namespace AccessibleTiles.Modules.ObjectTracker {
                 this.AddObjects(EntranceObjects.GetObjects());
             }
 
-            TTAnimals AnimalObjects = new TTAnimals();
-            if (AnimalObjects.HasObjects()) {
-                this.AddObjects(AnimalObjects.GetObjects());
-            }
-
             TTCrops CropObjects = new TTCrops();
             if (CropObjects.HasObjects()) {
                 this.AddObjects(CropObjects.GetObjects());
             }
-/*
+
+            
             Dictionary<string, object> undm = new();
             undm.Add("mod", this.Mod);
             undm.Add("access", this.Mod.Integrations.StardewAccess);
@@ -64,7 +66,8 @@ namespace AccessibleTiles.Modules.ObjectTracker {
             TTUndergroundMine MineObjects = new TTUndergroundMine(undm);
             if (MineObjects.HasObjects()) {
                 this.AddObjects(MineObjects.GetObjects());
-            }*/
+            }
+            */
 
             if (sortAlphabetically) {
                 foreach (var cat in Objects) {

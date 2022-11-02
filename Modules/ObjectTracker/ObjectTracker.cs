@@ -48,6 +48,8 @@ namespace AccessibleTiles.Modules.ObjectTracker {
 
         private void footstepTimer_Elapsed(object sender, ElapsedEventArgs e) {
             Farmer player = Game1.player;
+            if(player.controller==null) return;
+
             player.currentLocation.playTerrainSound(player.getTileLocation());
         }
 
@@ -65,7 +67,9 @@ namespace AccessibleTiles.Modules.ObjectTracker {
                         this.Mod.Output($"Attempting to restart pathfinding attempt {pathfindingRetryAttempts}");
 
                         if(pathfindingRetryAttempts == 1) {
+                            this.Mod.Output($"Target unreachable, re-trying...", true);
                             //move around NPC?
+
                             Dictionary<string, SpecialObject>? characters = TrackedObjects.GetObjects()["characters"];
 
                             if(characters != null) {
@@ -82,15 +86,15 @@ namespace AccessibleTiles.Modules.ObjectTracker {
                                 }
                             }
 
+                        } else if(pathfindingRetryAttempts == 5) {
+                            pathfindingRetryAttempts = 0;
+                            this.Mod.Output("Pathfinding forcibly stopped. Target Lost.", true);
+
+                            player.controller.endBehaviorFunction(player, location);
+                            GetLocationObjects(reset_focus: true);
+                            player.controller = null;
                         }
                         
-                    } else {
-                        pathfindingRetryAttempts = 0;
-                        player.controller.endBehaviorFunction(player, location);
-                        GetLocationObjects(reset_focus: true);
-
-                        this.Mod.Output("Pathfinding forcibly stopped. Target Lost.", true);
-                        player.controller = null;
                     }
                 }
             }
