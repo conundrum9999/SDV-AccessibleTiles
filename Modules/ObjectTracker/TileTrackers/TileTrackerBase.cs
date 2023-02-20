@@ -28,13 +28,13 @@ namespace AccessibleTiles.Modules.ObjectTracker.Categories {
             return Objects;
         }
 
-        public void AddFocusableObject(string category, string name, Vector2 tile, NPC character = null) {
+        public void AddFocusableObject(string category, string name, Vector2 tile, NPC? character = null) {
 
             if (!Objects.ContainsKey(category)) {
                 Objects.Add(category, new());
             }
 
-            SpecialObject sObject = new SpecialObject(name, tile);
+            SpecialObject sObject = new(name, tile);
 
             if(character != null) {
                 sObject.character = character;
@@ -48,7 +48,7 @@ namespace AccessibleTiles.Modules.ObjectTracker.Categories {
 
         }
 
-        public SpecialObject GetClosest(SpecialObject item1, SpecialObject item2) {
+        public static SpecialObject GetClosest(SpecialObject item1, SpecialObject item2) {
 
             Vector2 player_tile = Game1.player.getTileLocation();
 

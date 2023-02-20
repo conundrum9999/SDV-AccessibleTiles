@@ -29,16 +29,14 @@ namespace AccessibleTiles.Integrations {
         }
 
         public void SRSay(string text, Boolean interrupt = true) {
-            if(StardewAccess != null) {
-                StardewAccess.Say(text, interrupt);
-            }
+            StardewAccess?.Say(text, interrupt);
         }
 
         private void BuildConfigMenu() {
 
-            ModConfig config = Mod.Config;
+            ModConfig? config = Mod.Config;
 
-            ConfigMenu.Register(
+            ConfigMenu!.Register(
                 Mod.ModManifest,
                 reset: () => Mod.Config = new ModConfig(),
                 save: () => Mod.Helper.WriteConfig(config)

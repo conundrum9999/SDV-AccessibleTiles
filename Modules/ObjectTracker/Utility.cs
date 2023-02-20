@@ -51,8 +51,8 @@ namespace AccessibleTiles.Modules.ObjectTracker {
             Game1.player.UsingTool = false;
             Game1.player.usingSlingshot = false;
             Game1.player.FarmerSprite.PauseForSingleAnimation = false;
-            if (Game1.player.CurrentTool is FishingRod)
-                (Game1.player.CurrentTool as FishingRod).isFishing = false;
+            if (Game1.player.CurrentTool is FishingRod fishingRod)
+                fishingRod.isFishing = false;
             if (Game1.player.mount != null) {
                 Game1.player.mount.dismount();
             }
@@ -60,7 +60,7 @@ namespace AccessibleTiles.Modules.ObjectTracker {
 
         public static string DoCycle(ref string valueToUpdate, string[] object_keys, bool back = false) {
 
-            int count_keys = object_keys.Count();
+            int count_keys = object_keys.Length;
 
             string output_suffix = "";
 
@@ -112,7 +112,7 @@ namespace AccessibleTiles.Modules.ObjectTracker {
             double? ClosestTileDistanceToObject = null;
 
             //store the locations currently being checked. First check directly adjacent tiles
-            Dictionary<string, Vector2> checks = new Dictionary<string, Vector2>() {
+            Dictionary<string, Vector2> checks = new() {
                 { "top", Vector2.Add(topLeft, new(1, 0)) },
                 { "right", Vector2.Add(topLeft, new(2, 1)) },
                 { "bottom", Vector2.Add(topLeft, new(1, 2)) },
@@ -136,11 +136,11 @@ namespace AccessibleTiles.Modules.ObjectTracker {
 
                 foreach (var (qualifier, tile) in checks) {
 
-                    PathFindController controller = new PathFindController(Game1.player, Game1.currentLocation, tile.ToPoint(), -1, eraseOldPathController: true);
+                    PathFindController controller = new(Game1.player, Game1.currentLocation, tile.ToPoint(), -1, eraseOldPathController: true);
 
                     if (controller.pathToEndPoint != null) {
 
-                        int tile_distance = controller.pathToEndPoint.Count();
+                        int tile_distance = controller.pathToEndPoint.Count;
                         double distance_to_object = Utility.GetDistance(tilePosition, Game1.player.getTileLocation());
 
                         if (closestTileDistance == null) {

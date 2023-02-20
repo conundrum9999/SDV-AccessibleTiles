@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
     internal class TTStardewAccess : TileTrackerBase {
 
-        private string[] ignored_categories = { "animal" };
+        private readonly string[] ignored_categories = { "animal" };
 
         public TTStardewAccess(object? arg) : base(arg) {
             
@@ -20,7 +20,7 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
 
             if (arg == null) return;
 
-            Dictionary<Vector2, (string name, string category)> scannedTiles = (arg as StardewAccessInterface).SearchLocation();
+            Dictionary<Vector2, (string name, string category)> scannedTiles = (arg as StardewAccessInterface)!.SearchLocation();
 
             /* Categorise the scanned tiles into groups
              *

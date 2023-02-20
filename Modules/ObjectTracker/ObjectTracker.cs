@@ -16,44 +16,43 @@ namespace AccessibleTiles.Modules.ObjectTracker {
         private readonly ModEntry Mod;
         private readonly ModConfig ModConfig;
 
-        private TrackedObjects TrackedObjects;
+        private TrackedObjects? TrackedObjects;
 
-        //private Dictionary<NPC, int> haltedNPCs = new();
         private Vector2? LastTargetedTile = null;
 
-        public string SelectedCategory;
-        public string SelectedObject;
+        public string? SelectedCategory;
+        public string? SelectedObject;
 
 
         //stop player from moving too fast
-        int msBetweenCheckingPathfindingController = 1000;
-        Timer checkPathingTimer = new Timer();
+        readonly int msBetweenCheckingPathfindingController = 1000;
+        readonly Timer checkPathingTimer = new();
 
         int pathfindingRetryAttempts = 0;
 
         //stop player from moving too fast
-        Timer footstepTimer = new Timer();
+        readonly Timer footstepTimer = new();
 
-        public ObjectTracker(ModEntry mod, ModConfig config) {
+        public ObjectTracker(ModEntry? mod, ModConfig config) {
             this.Mod = mod;
             this.ModConfig = config;
 
             //set is_moving after x time to allow the next grid movement
             checkPathingTimer.Interval = msBetweenCheckingPathfindingController;
-            checkPathingTimer.Elapsed += checkPathingTimer_Elapsed;
+            checkPathingTimer.Elapsed += CheckPathingTimer_Elapsed;
 
             footstepTimer.Interval = mod.GridMovement.minMillisecondsBetweenSteps + 50;
-            footstepTimer.Elapsed += footstepTimer_Elapsed;
+            footstepTimer.Elapsed += FootstepTimer_Elapsed;
         }
 
-        private void footstepTimer_Elapsed(object sender, ElapsedEventArgs e) {
+        private void FootstepTimer_Elapsed(object sender, ElapsedEventArgs e) {
             Farmer player = Game1.player;
             if(player.controller==null) return;
 
             player.currentLocation.playTerrainSound(player.getTileLocation());
         }
 
-        private void checkPathingTimer_Elapsed(object sender, ElapsedEventArgs e) {
+        private void CheckPathingTimer_Elapsed(object sender, ElapsedEventArgs e) {
 
             Farmer player = Game1.player;
             GameLocation location = Game1.currentLocation;
@@ -70,14 +69,14 @@ namespace AccessibleTiles.Modules.ObjectTracker {
                             this.Mod.Output($"Target unreachable, re-trying...", true);
                             //move around NPC?
 
-                            Dictionary<string, SpecialObject>? characters = TrackedObjects.GetObjects()["characters"];
+                            Dictionary<string, SpecialObject>? characters = TrackedObjects!.GetObjects()["characters"];
 
                             if(characters != null) {
                                 foreach (var kvp in characters) {
 
-                                    NPC character = kvp.Value.character;
+                                    NPC? character = kvp.Value.character;
 
-                                    if(character.getTileLocation() == player.getTileLocation() && !character.IsInvisible) {
+                                    if(character is not null && character.getTileLocation() == player.getTileLocation() && !character.IsInvisible) {
                                         character.IsInvisible = true;
 
                                         //runs after x millseconds, according to function
@@ -90,9 +89,11 @@ namespace AccessibleTiles.Modules.ObjectTracker {
                             pathfindingRetryAttempts = 0;
                             this.Mod.Output("Pathfinding forcibly stopped. Target Lost.", true);
 
-                            player.controller.endBehaviorFunction(player, location);
-                            GetLocationObjects(reset_focus: true);
-                            player.controller = null;
+                            if (player.controller is not null) {
+                                player.controller.endBehaviorFunction(player, location);
+                                GetLocationObjects(reset_focus: true);
+                                player.controller = null;
+                        }
                         }
                         
                     }
@@ -100,11 +101,11 @@ namespace AccessibleTiles.Modules.ObjectTracker {
             }
         }
 
-        private async Task SetCharacterVisible(NPC npc) {
+        private static async Task SetCharacterVisible(NPC npc) {
             await Task.Delay(100);
             npc.IsInvisible = false;
         }
-        public void HandleKeys(object sender, ButtonsChangedEventArgs e) {
+        public void HandleKeys(object? sender, ButtonsChangedEventArgs e) {
 
             if (ModConfig.OTCycleUpCategory.JustPressed()) {
                 CycleCategory(back: true);
@@ -136,9 +137,11 @@ namespace AccessibleTiles.Modules.ObjectTracker {
         }
 
         private Boolean IsFocusValid() {
-            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects.GetObjects();
-            if (objects.ContainsKey(SelectedCategory) && objects[SelectedCategory].ContainsKey(SelectedObject)) {
-                return true;
+            if (TrackedObjects is not null && SelectedCategory is not null && SelectedObject is not null) {
+                SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects.GetObjects();
+                if (objects.ContainsKey(SelectedCategory) && objects[SelectedCategory].ContainsKey(SelectedObject)) {
+                    return true;
+                }
             }
             return false;
         }
@@ -153,7 +156,7 @@ namespace AccessibleTiles.Modules.ObjectTracker {
             }
 
             Farmer player = Game1.player;
-            SpecialObject sObject = GetCurrentlySelectedObject();
+            SpecialObject sObject = GetCurrentlySelectedObject()!;
 
             Vector2 playerTile = player.getTileLocation();
             Vector2 sObjectTile = sObject.TileLocation;
@@ -166,12 +169,6 @@ namespace AccessibleTiles.Modules.ObjectTracker {
             }
 
             if (closestTile != null) {
-
-                /*if(sObject.character != null) {
-                    haltedNPCs.Add(sObject.character, sObject.character.speed);
-                    sObject.character.speed = 0;
-                }*/
-
                 this.Mod.Output($"Moving to {closestTile.Value.X}-{closestTile.Value.Y}.", true);
                 StartPathfinding(player, Game1.currentLocation, closestTile.Value.ToPoint());
                 
@@ -230,25 +227,19 @@ namespace AccessibleTiles.Modules.ObjectTracker {
 
         }
 
-        /*private async Task UnhaltNPCS() {
-            await Task.Delay(3000);
-            foreach (var npcs in haltedNPCs) {
-                npcs.Key.speed = npcs.Value;
-            }
-            haltedNPCs.Clear();
-        }*/
-
         private void ReadCurrentlySelectedObject(bool readTileOnly = false) {
+            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
+                return;
 
-            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects.GetObjects();
+            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects!.GetObjects();
 
-            if (!(objects.ContainsKey(SelectedCategory) && objects[SelectedCategory].ContainsKey(SelectedObject))) {
+            if (!(objects.ContainsKey(SelectedCategory!) && objects[SelectedCategory!].ContainsKey(SelectedObject!))) {
                 this.Mod.Output($"No Object Selected", true);
                 return;
             }
 
             Farmer player = Game1.player;
-            SpecialObject sObject = GetCurrentlySelectedObject();
+            SpecialObject sObject = GetCurrentlySelectedObject()!;
 
             Vector2 playerTile = player.getTileLocation();
             Vector2 sObjectTile = sObject.TileLocation;
@@ -261,7 +252,7 @@ namespace AccessibleTiles.Modules.ObjectTracker {
         }
 
         private string ReplacePlaceholders(string s, Vector2 playerTile, Vector2 sObjectTile, string direction, string distance) {
-            StringBuilder sb = new StringBuilder(s);
+            StringBuilder sb = new(s);
 
             sb.Replace("{object}", SelectedObject);
 
@@ -277,55 +268,67 @@ namespace AccessibleTiles.Modules.ObjectTracker {
 
         private void CycleCategory(bool back = false) {
 
-            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects.GetObjects();
+            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
+                return;
+
+            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects!.GetObjects();
 
             string[] object_keys = objects.Keys.ToArray();
 
-            if (!object_keys.Contains(SelectedCategory)) {
+            if (!object_keys.Contains(SelectedCategory!)) {
                 this.Mod.Output("No Categories Found", true);
             }
 
-            string suffix_text = Utility.DoCycle(ref SelectedCategory, object_keys, back);
+            string suffix_text = Utility.DoCycle(ref SelectedCategory!, object_keys, back);
             this.SetFocusedObjectToFirstInCategory();
 
             if (suffix_text.Length > 0) {
                 suffix_text = ", " + suffix_text;
             }
 
-            this.Mod.Output($"{SelectedCategory}, {SelectedObject}" + suffix_text, true);
+            this.Mod.Output($"{SelectedCategory!}, {SelectedObject!}" + suffix_text, true);
 
         }
 
         private void CycleObjects(bool back = false) {
 
-            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects.GetObjects();
+            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
+                return;
+
+            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects!.GetObjects();
 
             string[] categories = objects.Keys.ToArray();
 
-            if (!categories.Contains(SelectedCategory)) {
+            if (!categories.Contains(SelectedCategory!)) {
                 this.Mod.Output("No Categories Found", true);
             }
 
-            string[] object_keys = objects[SelectedCategory].Keys.ToArray();
+            string[] object_keys = objects[SelectedCategory!].Keys.ToArray();
 
-            string suffix_text = Utility.DoCycle(ref SelectedObject, object_keys, back);
+            string suffix_text = Utility.DoCycle(ref SelectedObject!, object_keys, back);
 
             if(suffix_text.Length > 0) {
                 suffix_text = ", " + suffix_text;
             }
 
-            this.Mod.Output($"{SelectedObject}, {SelectedCategory}" + suffix_text, true);
+            this.Mod.Output($"{SelectedObject!}, {SelectedCategory!}" + suffix_text, true);
 
         }
 
         private SpecialObject? GetCurrentlySelectedObject() {
-            return TrackedObjects.GetObjects()[SelectedCategory][SelectedObject];
+            if (TrackedObjects is not null && SelectedCategory is not null && SelectedObject is not null)
+                return TrackedObjects!.GetObjects()[SelectedCategory!][SelectedObject!];
+            return null;
         }
+
         private void SetFocusedObjectToFirstInCategory() {
 
-            var objects = TrackedObjects.GetObjects();
+            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
+                return;
 
-            if(objects.ContainsKey(SelectedCategory)) {
+            var objects = TrackedObjects!.GetObjects();
+
+            if(objects.ContainsKey(SelectedCategory!)) {
                 Dictionary<string, SpecialObject> cat_objects = objects[SelectedCategory];
                 SelectedObject = cat_objects.Keys.ToArray()[0];
             }
@@ -334,9 +337,11 @@ namespace AccessibleTiles.Modules.ObjectTracker {
 
         private void SetDefaultCategoryAndFocusedObject() {
 
-            var objects = TrackedObjects.GetObjects();
+            if (TrackedObjects is null)
+                return;
 
-            if(TrackedObjects.GetObjects().Count() < 1) {
+            var objects = TrackedObjects.GetObjects();
+            if (objects is not null && objects.Count < 1) {
                 this.Mod.Output("No objects found.");
             } else {
 
@@ -351,21 +356,25 @@ namespace AccessibleTiles.Modules.ObjectTracker {
         }
 
         internal void GetLocationObjects(bool reset_focus = true) {
-            TrackedObjects tracked_objects = new TrackedObjects(this.Mod);
+            //this.Mod.Output("mark1");
+            TrackedObjects tracked_objects = new(this.Mod);
             tracked_objects.FindObjectsInArea(!this.sortByProxy);
             this.TrackedObjects = tracked_objects;
 
-            if(!reset_focus) {
+            if(!reset_focus && SelectedCategory is not null) {
                 if(!tracked_objects.GetObjects().ContainsKey(SelectedCategory)) {
                     reset_focus = true;
                 }
             }
 
+            //this.Mod.Output("mark3");
             if(reset_focus) {
                 this.SetDefaultCategoryAndFocusedObject();
             }
 
-            if(!tracked_objects.GetObjects()[SelectedCategory].ContainsKey(SelectedObject) && tracked_objects.GetObjects().ContainsKey(SelectedCategory)) {
+            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null) {
+                return;
+            } else if(!tracked_objects.GetObjects()[SelectedCategory].ContainsKey(SelectedObject) && tracked_objects!.GetObjects().ContainsKey(SelectedCategory)) {
                 this.SetFocusedObjectToFirstInCategory();
             }
 

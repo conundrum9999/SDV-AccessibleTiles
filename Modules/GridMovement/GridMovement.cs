@@ -19,7 +19,7 @@ namespace AccessibleTiles.Modules.GridMovement {
 
         //stop player from moving too fast
         public int minMillisecondsBetweenSteps = 210;
-        Timer timer = new Timer();
+        readonly Timer timer = new();
 
         public GridMovement(ModEntry mod) {
             this.Mod = mod;
@@ -84,7 +84,7 @@ namespace AccessibleTiles.Modules.GridMovement {
 
             Mod.Output($"Move To: {tileLocation}");
 
-            Rectangle position = new Microsoft.Xna.Framework.Rectangle((int)tileLocation.X * Game1.tileSize, (int)tileLocation.Y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
+            Rectangle position = new((int)tileLocation.X * Game1.tileSize, (int)tileLocation.Y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
             Warp warp = location.isCollidingWithWarpOrDoor(position, Game1.player);
             if(warp != null) {
                 if (isDoorAtTile((int)tileLocation.X, (int)tileLocation.Y))
@@ -113,12 +113,12 @@ namespace AccessibleTiles.Modules.GridMovement {
 
             } else {
 
-                PathFindController pathfinder = new PathFindController(player, location, tileLocation.ToPoint(), direction);
+                PathFindController pathfinder = new(player, location, tileLocation.ToPoint(), direction);
                 if (pathfinder.pathToEndPoint != null) {
                     //valid point
                     player.Position = tileLocation * Game1.tileSize;
                     location.playTerrainSound(tileLocation);
-                    this.CenterPlayer();
+                    CenterPlayer();
 
                 }
 
@@ -128,9 +128,9 @@ namespace AccessibleTiles.Modules.GridMovement {
 
         }
 
-        private Boolean isDoorAtTile(int x, int y)
+        private static Boolean isDoorAtTile(int x, int y)
         {
-            Point tilePoint = new Point(x, y);
+            Point tilePoint = new(x, y);
             StardewValley.Network.NetPointDictionary<string, Netcode.NetString> doorList = Game1.currentLocation.doors;
 
             for (int i = 0; i < doorList.Count(); i++)
@@ -144,7 +144,7 @@ namespace AccessibleTiles.Modules.GridMovement {
             return false;
         }
 
-        internal void PlayerWarped(object sender, WarpedEventArgs e) {
+        internal void PlayerWarped(object? sender, WarpedEventArgs e) {
             this.HandleFinishedWarping();
         }
 
@@ -163,7 +163,7 @@ namespace AccessibleTiles.Modules.GridMovement {
             }
         }
 
-        private void CenterPlayer() {
+        private static void CenterPlayer() {
             Game1.player.Position = Vector2.Divide(Game1.player.Position, Game1.tileSize) * Game1.tileSize;
         }
 

@@ -23,10 +23,10 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
 
             List<FarmAnimal>? farmAnimals = null;
 
-            if (location is Farm)
-                farmAnimals = (location as Farm).animals.Values.ToList();
+            if (location is Farm farm)
+                farmAnimals = farm.animals != null ? farm.animals.Values.ToList() : null;
             else if (location is AnimalHouse)
-                farmAnimals = (location as AnimalHouse).animals.Values.ToList();
+                farmAnimals = (location as AnimalHouse)!.animals.Values.ToList();
 
             if (farmAnimals != null) {
 

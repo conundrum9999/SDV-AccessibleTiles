@@ -18,7 +18,7 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
 
         public override void FindObjects(object? arg) {
 
-            var specialPoints = (arg as ModEntry).Helper.ModContent.Load<Dictionary<string, List<object>>>("assets/SpecialPoints.json");
+            var specialPoints = (arg as ModEntry)!.Helper.ModContent.Load<Dictionary<string, List<object>>>("assets/SpecialPoints.json");
 
             Farmer player = Game1.player;
 
@@ -51,7 +51,8 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
                         }
                     }
 
-                    AddFocusableObject(object_category, sPoint.name, new(sPoint.xPos, sPoint.yPos));
+                    if (sPoint.name is not null)
+                        AddFocusableObject(object_category, sPoint.name, new(sPoint.xPos, sPoint.yPos)!);
 
                 }
             };
@@ -62,7 +63,7 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
     }
 
     public class SpecialPoint {
-        public string name { get; set; }
+        public string? name { get; set; }
         public string? category_override { get; set; } = null;
         public int xPos { get; set; }
         public int yPos { get; set; }
