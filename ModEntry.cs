@@ -79,7 +79,7 @@ namespace AccessibleTiles {
                 int currentTerrainFeatures = Game1.currentLocation.terrainFeatures.Count();
                 int currentLargeTerrainFeatures = Game1.currentLocation.largeTerrainFeatures.Count;
                 
-                if (previousDebris != currentDebris || previousObjects != currentObjects || previousFurniture != currentFurniture || previousResourceClumps != currentResourceClumps || previousTerrainFeatures != currentTerrainFeatures || previousLargeTerrainFeatures != currentLargeTerrainFeatures) {
+                if (e.IsMultipleOf(15) && (previousDebris != currentDebris || previousObjects != currentObjects || previousFurniture != currentFurniture || previousResourceClumps != currentResourceClumps || previousTerrainFeatures != currentTerrainFeatures || previousLargeTerrainFeatures != currentLargeTerrainFeatures)) {
                     previousDebris = currentDebris;
                     previousObjects = currentObjects;
                     previousFurniture = currentFurniture;
