@@ -1,6 +1,6 @@
 # Developer Note
 
-I currently have too many different projects going on to focus on this. If anyone would like to take over development, please contact me.
+Originally by @GrumpyCrouton; I've taken over maintaining this project for now.
 
 # SDV-AccessibleTiles
 
