@@ -70,7 +70,7 @@ namespace AccessibleTiles {
             }
             
             // Automatically refreshes the object tracker when the number of objects in current map changes.
-            if (Game1.currentLocation != null && Config!.OTAutoRefreshing)
+            if (e.IsMultipleOf(15) && Game1.currentLocation != null && Config.OTAutoRefreshing)
             {
                 int currentDebris = Game1.currentLocation.debris.Count;
                 int currentObjects = Game1.currentLocation.objects.Count();
@@ -79,7 +79,7 @@ namespace AccessibleTiles {
                 int currentTerrainFeatures = Game1.currentLocation.terrainFeatures.Count();
                 int currentLargeTerrainFeatures = Game1.currentLocation.largeTerrainFeatures.Count;
                 
-                if (e.IsMultipleOf(15) && (previousDebris != currentDebris || previousObjects != currentObjects || previousFurniture != currentFurniture || previousResourceClumps != currentResourceClumps || previousTerrainFeatures != currentTerrainFeatures || previousLargeTerrainFeatures != currentLargeTerrainFeatures)) {
+                if ((previousDebris != currentDebris || previousObjects != currentObjects || previousFurniture != currentFurniture || previousResourceClumps != currentResourceClumps || previousTerrainFeatures != currentTerrainFeatures || previousLargeTerrainFeatures != currentLargeTerrainFeatures)) {
                     previousDebris = currentDebris;
                     previousObjects = currentObjects;
                     previousFurniture = currentFurniture;
@@ -107,6 +107,8 @@ namespace AccessibleTiles {
         }
 
         private void Input_ButtonsChanged(object? sender, ButtonsChangedEventArgs e) {
+            if (!Context.IsPlayerFree)
+                return;
 
             if (Game1.activeClickableMenu != null) return;
 
@@ -125,6 +127,8 @@ namespace AccessibleTiles {
         }
 
         private void Input_ButtonPressed(object? sender, ButtonPressedEventArgs e) {
+            if (!Context.IsPlayerFree)
+                return;
 
             if (Config is null)
                 return;

@@ -1,8 +1,8 @@
 {
   "Name": "AccessibleTiles",
   "Author": "Conundrum9999 (maintainer); GrumpyCrouton (original)",
-  "Version": "3.0.3-beta",
-  "Description": "Moves the player based on the tile grid, and track nearby objects and interactables",
+  "Version": "3.0.3-beta2",
+  "Description": "Moves the player based on the tile grid, and tracks nearby objects and interactables",
   "UniqueID": "GrumpyCrouton.AccessibleTiles",
   "EntryDll": "AccessibleTiles.dll",
   "MinimumApiVersion": "3.0.0",
