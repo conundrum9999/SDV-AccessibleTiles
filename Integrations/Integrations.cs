@@ -9,7 +9,7 @@ namespace AccessibleTiles.Integrations {
     public class ModIntegrations {
 
         private readonly ModEntry Mod;
-        public StardewAccessInterface? StardewAccess { get; set; }
+        public IStardewAccessInterface? StardewAccess { get; set; }
 
         public IGenericModConfigMenuApi? ConfigMenu { get; set; }
 
@@ -18,7 +18,7 @@ namespace AccessibleTiles.Integrations {
             this.Mod = mod;
 
             if (mod.Helper.ModRegistry.IsLoaded("shoaib.stardewaccess")) {
-                this.StardewAccess = mod.Helper.ModRegistry.GetApi<StardewAccessInterface>("shoaib.stardewaccess");
+                this.StardewAccess = mod.Helper.ModRegistry.GetApi<IStardewAccessInterface>("shoaib.stardewaccess");
             }
 
             if (mod.Helper.ModRegistry.IsLoaded("spacechase0.GenericModConfigMenu")) {
@@ -35,11 +35,12 @@ namespace AccessibleTiles.Integrations {
         private void BuildConfigMenu() {
 
             ModConfig? config = Mod.Config;
+            if (config is null) return;
 
             ConfigMenu!.Register(
                 Mod.ModManifest,
                 reset: () => Mod.Config = new ModConfig(),
-                save: () => Mod.Helper.WriteConfig(config)
+                save: () => Mod.Helper.WriteConfig(config!)
             );
 
             //grid movement
@@ -51,22 +52,22 @@ namespace AccessibleTiles.Integrations {
             ConfigMenu.AddBoolOption(
                 Mod.ModManifest,
                 name: () => "Grid Movement Active",
-                getValue: () => config.GridMovementActive,
-                setValue: value => config.GridMovementActive = value
+                getValue: () => config?.GridMovementActive ?? false,
+                setValue: value => config!.GridMovementActive = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Toggle Grid Movement",
-                getValue: () => config.ToggleGridMovementKey,
-                setValue: value => config.ToggleGridMovementKey = value
+                getValue: () => config!.ToggleGridMovementKey,
+                setValue: value => config!.ToggleGridMovementKey = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Grid Movement Override",
-                getValue: () => config.GridMovementOverrideKey,
-                setValue: value => config.GridMovementOverrideKey = value
+                getValue: () => config!.GridMovementOverrideKey,
+                setValue: value => config!.GridMovementOverrideKey = value
             );
 
             //tracker
@@ -78,64 +79,64 @@ namespace AccessibleTiles.Integrations {
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Cycle Up Category",
-                getValue: () => config.OTCycleUpCategory,
-                setValue: value => config.OTCycleUpCategory = value
+                getValue: () => config!.OTCycleUpCategory,
+                setValue: value => config!.OTCycleUpCategory = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Cycle Down Category",
-                getValue: () => config.OTCycleDownCategory,
-                setValue: value => config.OTCycleDownCategory = value
+                getValue: () => config!.OTCycleDownCategory,
+                setValue: value => config!.OTCycleDownCategory = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Cycle Up Object",
-                getValue: () => config.OTCycleUpObject,
-                setValue: value => config.OTCycleUpObject = value
+                getValue: () => config!.OTCycleUpObject,
+                setValue: value => config!.OTCycleUpObject = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Cycle Down Object",
-                getValue: () => config.OTCycleDownObject,
-                setValue: value => config.OTCycleDownObject = value
+                getValue: () => config!.OTCycleDownObject,
+                setValue: value => config!.OTCycleDownObject = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Read Selected Object",
-                getValue: () => config.OTReadSelectedObject,
-                setValue: value => config.OTReadSelectedObject = value
+                getValue: () => config!.OTReadSelectedObject,
+                setValue: value => config!.OTReadSelectedObject = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Read Selected Object Tile",
-                getValue: () => config.OTReadSelectedObjectTileLocation,
-                setValue: value => config.OTReadSelectedObjectTileLocation = value
+                getValue: () => config!.OTReadSelectedObjectTileLocation,
+                setValue: value => config!.OTReadSelectedObjectTileLocation = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Move To Selected Object",
-                getValue: () => config.OTMoveToSelectedObject,
-                setValue: value => config.OTMoveToSelectedObject = value
+                getValue: () => config!.OTMoveToSelectedObject,
+                setValue: value => config!.OTMoveToSelectedObject = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Cancel Auto Walking",
-                getValue: () => config.OTCancelAutoWalking,
-                setValue: value => config.OTCancelAutoWalking = value
+                getValue: () => config!.OTCancelAutoWalking,
+                setValue: value => config!.OTCancelAutoWalking = value
             );
 
             ConfigMenu.AddKeybindList(
                 Mod.ModManifest,
                 name: () => "Switch Sorting Mode",
-                getValue: () => config.OTSwitchSortingMode,
-                setValue: value => config.OTSwitchSortingMode = value
+                getValue: () => config!.OTSwitchSortingMode,
+                setValue: value => config!.OTSwitchSortingMode = value
             );
 
             //screen reader
@@ -148,15 +149,15 @@ namespace AccessibleTiles.Integrations {
                 ConfigMenu.AddTextOption(
                     Mod.ModManifest,
                     name: () => "Read Object Text Template",
-                    getValue: () => config.OTReadSelectedObjectText,
-                    setValue: value => config.OTReadSelectedObjectText = value
+                    getValue: () => config?.OTReadSelectedObjectText ?? string.Empty,
+                    setValue: value => config!.OTReadSelectedObjectText = value
                 );
 
                 ConfigMenu.AddTextOption(
                     Mod.ModManifest,
                     name: () => "Read Object Text Template",
-                    getValue: () => config.OTReadSelectedObjectText,
-                    setValue: value => config.OTReadSelectedObjectText = value
+                    getValue: () => config?.OTReadSelectedObjectText ?? string.Empty,
+                    setValue: value => config!.OTReadSelectedObjectText = value
                 );
             }
 

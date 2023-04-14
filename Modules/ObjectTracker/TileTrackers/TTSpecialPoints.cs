@@ -30,16 +30,16 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
 
                     SpecialPoint sPoint = Newtonsoft.Json.JsonConvert.DeserializeObject<SpecialPoint>(Newtonsoft.Json.JsonConvert.SerializeObject(obj));
 
-                    string object_category = sPoint.category_override != null ? sPoint.category_override : category;
+                    string object_category = sPoint.CategoryOverride ?? category;
 
-                    if (sPoint.requiresQuest != null) {
-                        if (!player.hasQuest(sPoint.requiresQuest.Value)) {
+                    if (sPoint.RequiresQuest != null) {
+                        if (!player.hasQuest(sPoint.RequiresQuest.Value)) {
                             continue;
                         }
                     }
 
-                    if (sPoint.extraChecksHook != null) {
-                        switch (sPoint.extraChecksHook) {
+                    if (sPoint.ExtraChecksHook != null) {
+                        switch (sPoint.ExtraChecksHook) {
                             case 1:
                                 //Shadow Guy's Hiding Bush
                                 if (!player.hasMagnifyingGlass) continue;
@@ -51,8 +51,8 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
                         }
                     }
 
-                    if (sPoint.name is not null)
-                        AddFocusableObject(object_category, sPoint.name, new(sPoint.xPos, sPoint.yPos)!);
+                    if (sPoint.Name is not null)
+                        AddFocusableObject(object_category, sPoint.Name, new(sPoint.XPos, sPoint.YPos)!);
 
                 }
             };
@@ -63,11 +63,11 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
     }
 
     public class SpecialPoint {
-        public string? name { get; set; }
-        public string? category_override { get; set; } = null;
-        public int xPos { get; set; }
-        public int yPos { get; set; }
-        public int? requiresQuest { get; set; } = null;
-        public int? extraChecksHook { get; set; } = null;
+        public string? Name { get; set; }
+        public string? CategoryOverride { get; set; } = null;
+        public int XPos { get; set; }
+        public int YPos { get; set; }
+        public int? RequiresQuest { get; set; } = null;
+        public int? ExtraChecksHook { get; set; } = null;
     }
 }

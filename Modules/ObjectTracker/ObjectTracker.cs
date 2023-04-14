@@ -4,14 +4,14 @@ using StardewValley;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using System.Threading.Tasks;
 using System.Timers;
 
-namespace AccessibleTiles.Modules.ObjectTracker {
-    internal class ObjectTracker {
-
-        private Boolean sortByProxy = true;
+namespace AccessibleTiles.Modules.ObjectTracker
+{
+    internal class ObjectTracker
+    {
+        private bool sortByProxy = true;
 
         private readonly ModEntry Mod;
         private readonly ModConfig ModConfig;
@@ -23,361 +23,357 @@ namespace AccessibleTiles.Modules.ObjectTracker {
         public string? SelectedCategory;
         public string? SelectedObject;
 
+        private readonly int msBetweenCheckingPathfindingController = 1000;
+        private readonly Timer checkPathingTimer = new();
+        private int pathfindingRetryAttempts = 0;
 
-        //stop player from moving too fast
-        readonly int msBetweenCheckingPathfindingController = 1000;
-        readonly Timer checkPathingTimer = new();
+        private readonly Timer footstepTimer = new();
 
-        int pathfindingRetryAttempts = 0;
+        public ObjectTracker(ModEntry mod, ModConfig? config)
+        {
+            if (config == null)
+                throw new ArgumentNullException(nameof(config), "The provided config must not be null.");
 
-        //stop player from moving too fast
-        readonly Timer footstepTimer = new();
-
-        public ObjectTracker(ModEntry? mod, ModConfig config) {
             this.Mod = mod;
             this.ModConfig = config;
 
-            //set is_moving after x time to allow the next grid movement
             checkPathingTimer.Interval = msBetweenCheckingPathfindingController;
             checkPathingTimer.Elapsed += CheckPathingTimer_Elapsed;
 
-            footstepTimer.Interval = mod.GridMovement.minMillisecondsBetweenSteps + 50;
+            footstepTimer.Interval = mod.GridMovement!.minMillisecondsBetweenSteps + 50;
             footstepTimer.Elapsed += FootstepTimer_Elapsed;
         }
 
-        private void FootstepTimer_Elapsed(object sender, ElapsedEventArgs e) {
+        public void HandleKeys(object? sender, ButtonsChangedEventArgs e)
+        {
+            if (ModConfig.OTCycleUpCategory.JustPressed())
+            {
+                Cycle(cycleCategories: true, back: true);
+            }
+            else if (ModConfig.OTCycleDownCategory.JustPressed())
+            {
+                Cycle(cycleCategories: true);
+            }
+            else if (ModConfig.OTCycleUpObject.JustPressed())
+            {
+                Cycle(cycleCategories: false, back: true);
+            }
+            else if (ModConfig.OTCycleDownObject.JustPressed())
+            {
+                Cycle(cycleCategories: false);
+            }
+            else if (ModConfig.OTReadSelectedObject.JustPressed())
+            {
+                GetLocationObjects(resetFocus: false);
+                ReadCurrentlySelectedObject();
+            }
+            else if (ModConfig.OTSwitchSortingMode.JustPressed())
+            {
+                this.sortByProxy = !this.sortByProxy;
+
+                Mod.Output("Sort By Proximity: " + (sortByProxy ? "Enabled" : "Disabled"), true);
+                GetLocationObjects(resetFocus: false);
+            }
+
+            if (ModConfig.OTMoveToSelectedObject.JustPressed())
+            {
+                GetLocationObjects(resetFocus: false);
+                MoveToCurrentlySelectedObject();
+            }
+            else if (ModConfig.OTReadSelectedObjectTileLocation.JustPressed())
+            {
+                GetLocationObjects(resetFocus: false);
+                ReadCurrentlySelectedObject(readTileOnly: true);
+            }
+        }
+
+        private void FootstepTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        {
             Farmer player = Game1.player;
-            if(player.controller==null) return;
+            if (player.controller == null) return;
 
             player.currentLocation.playTerrainSound(player.getTileLocation());
         }
 
-        private void CheckPathingTimer_Elapsed(object sender, ElapsedEventArgs e) {
-
+        private void CheckPathingTimer_Elapsed(object? sender, ElapsedEventArgs e)
+        {
             Farmer player = Game1.player;
             GameLocation location = Game1.currentLocation;
 
-            if (player.controller != null && (Game1.activeClickableMenu == null || Game1.IsMultiplayer)) {
-                if (player.controller.timerSinceLastCheckPoint > 500) {
-
-                    if (IsFocusValid() && pathfindingRetryAttempts < 5) {
+            if (player.controller != null && (Game1.activeClickableMenu == null || Game1.IsMultiplayer))
+            {
+                if (player.controller.timerSinceLastCheckPoint > 500)
+                {
+                    if (IsFocusValid() && pathfindingRetryAttempts < 5)
+                    {
                         pathfindingRetryAttempts++;
 
-                        this.Mod.Output($"Attempting to restart pathfinding attempt {pathfindingRetryAttempts}");
+                        Mod.Output($"Attempting to restart pathfinding attempt {pathfindingRetryAttempts}");
 
-                        if(pathfindingRetryAttempts == 1) {
-                            this.Mod.Output($"Target unreachable, re-trying...", true);
-                            //move around NPC?
+                        if (pathfindingRetryAttempts == 1)
+                        {
+                            Mod.Output($"Target unreachable, re-trying...", true);
 
-                            Dictionary<string, SpecialObject>? characters = TrackedObjects!.GetObjects()["characters"];
-
-                            if(characters != null) {
-                                foreach (var kvp in characters) {
-
+                            if (TrackedObjects != null && TrackedObjects.GetObjects().TryGetValue("characters", out var characters))
+                            {
+                                foreach (var kvp in characters)
+                                {
                                     NPC? character = kvp.Value.character;
 
-                                    if(character is not null && character.getTileLocation() == player.getTileLocation() && !character.IsInvisible) {
+                                    if (character is not null && character.getTileLocation() == player.getTileLocation() && !character.IsInvisible)
+                                    {
                                         character.IsInvisible = true;
-
-                                        //runs after x millseconds, according to function
-                                        Task ignore = SetCharacterVisible(character);
+                                        _ = SetCharacterVisible(character);
                                     }
                                 }
                             }
-
-                        } else if(pathfindingRetryAttempts == 5) {
+                        }
+                        else if (pathfindingRetryAttempts == 5)
+                        {
                             pathfindingRetryAttempts = 0;
-                            this.Mod.Output("Pathfinding forcibly stopped. Target Lost.", true);
+                            Mod.Output("Pathfinding forcibly stopped. Target Lost.", true);
 
-                            if (player.controller is not null) {
-                                player.controller.endBehaviorFunction(player, location);
-                                GetLocationObjects(reset_focus: true);
-                                player.controller = null;
+                            player.controller.endBehaviorFunction(player, location);
+                            GetLocationObjects(resetFocus: true);
+                            player.controller = null;
                         }
-                        }
-                        
                     }
                 }
             }
         }
 
-        private static async Task SetCharacterVisible(NPC npc) {
+        private static async Task SetCharacterVisible(NPC npc)
+        {
             await Task.Delay(100);
             npc.IsInvisible = false;
         }
-        public void HandleKeys(object? sender, ButtonsChangedEventArgs e) {
 
-            if (ModConfig.OTCycleUpCategory.JustPressed()) {
-                CycleCategory(back: true);
-            } else if (ModConfig.OTCycleDownCategory.JustPressed()) {
-                CycleCategory();
-            } else if (ModConfig.OTCycleUpObject.JustPressed()) {
-                CycleObjects(back: true);
-            } else if (ModConfig.OTCycleDownObject.JustPressed()) {
-                CycleObjects();
-            } else if (ModConfig.OTReadSelectedObject.JustPressed()) {
-                GetLocationObjects(reset_focus: false);
-                ReadCurrentlySelectedObject();
-            } else if(ModConfig.OTSwitchSortingMode.JustPressed()) {
-                this.sortByProxy = !this.sortByProxy;
-
-                this.Mod.Output("Sort By Proximity: " + (sortByProxy ? "Enabled" : "Disabled"), true);
-                GetLocationObjects(reset_focus: false);
-
-            }
-
-            if (ModConfig.OTMoveToSelectedObject.JustPressed()) {
-                GetLocationObjects(reset_focus: false);
-                MoveToCurrentlySelectedObject();
-            } else if (ModConfig.OTReadSelectedObjectTileLocation.JustPressed()) {
-                GetLocationObjects(reset_focus: false);
-                ReadCurrentlySelectedObject(readTileOnly: true);
-            }
-
-        }
-
-        private Boolean IsFocusValid() {
-            if (TrackedObjects is not null && SelectedCategory is not null && SelectedObject is not null) {
-                SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects.GetObjects();
-                if (objects.ContainsKey(SelectedCategory) && objects[SelectedCategory].ContainsKey(SelectedObject)) {
-                    return true;
-                }
-            }
+        private bool IsFocusValid()
+        {
+            if (SelectedCategory != null && SelectedObject != null)
+                return TrackedObjects?.GetObjects().ContainsKey(SelectedCategory) == true && TrackedObjects.GetObjects()[SelectedCategory].ContainsKey(SelectedObject);
             return false;
         }
 
-        private void MoveToCurrentlySelectedObject() {
+        private bool IsValidSelection()
+        {
+            return TrackedObjects != null && SelectedCategory != null && SelectedObject != null;
+        }
 
-            this.Mod.Output($"Attempt pathfinding.", true);
+        private void MoveToCurrentlySelectedObject()
+        {
+            Mod.Output("Attempt pathfinding.", true);
             pathfindingRetryAttempts = 0;
 
-            if (this.IsFocusValid()) {
+            if (IsFocusValid())
+            {
                 ReadCurrentlySelectedObject();
             }
 
             Farmer player = Game1.player;
-            SpecialObject sObject = GetCurrentlySelectedObject()!;
+            SpecialObject? sObject = GetCurrentlySelectedObject();
 
+            #pragma warning disable IDE0059 // Unnecessary assignment of a value
             Vector2 playerTile = player.getTileLocation();
-            Vector2 sObjectTile = sObject.TileLocation;
+            #pragma warning restore IDE0059 // Unnecessary assignment of a value
+            Vector2? sObjectTile = (sObject != null) ? sObject.TileLocation : (Vector2?)null;
 
-            Vector2? closestTile = null;
-            if (sObject.PathfindingOverride != null) {
-                closestTile = Utility.GetClosestTilePath((Vector2)sObject.PathfindingOverride);
-            } else {
-                closestTile = Utility.GetClosestTilePath(sObjectTile);
-            }
+            Vector2? closestTile = sObject is not null ? (sObject.PathfindingOverride != null ? Utility.GetClosestTilePath((Vector2)sObject.PathfindingOverride) : Utility.GetClosestTilePath(sObjectTile)) : null;
 
-            if (closestTile != null) {
-                this.Mod.Output($"Moving to {closestTile.Value.X}-{closestTile.Value.Y}.", true);
+            if (closestTile != null)
+            {
+                Mod.Output($"Moving to {closestTile.Value.X}-{closestTile.Value.Y}.", true);
                 StartPathfinding(player, Game1.currentLocation, closestTile.Value.ToPoint());
-                
-
-            } else {
-
-                this.Mod.Output("Could not find path to object.", true);
-
             }
-
+            else
+            {
+                Mod.Output("Could not find path to object.", true);
+            }
         }
 
-        private void StartPathfinding(Farmer player, GameLocation location, Point targetTile, int direction = -1) {
-
+        private void StartPathfinding(Farmer player, GameLocation location, Point targetTile, int direction = -1)
+        {
             LastTargetedTile = targetTile.ToVector2();
+            StopTimers();
+            StartTimers();
 
-            footstepTimer.Stop();
-            checkPathingTimer.Stop();
-            footstepTimer.Start();
-
-            checkPathingTimer.Start();
-
-            player.controller = new PathFindController(player, location, targetTile, direction, (Character farmer, GameLocation location) => {
-                this.StopPathfinding();
+            player.controller = new PathFindController(player, location, targetTile, direction, (Character farmer, GameLocation location) =>
+            {
+                StopPathfinding();
             });
-
         }
 
-        private void StopPathfinding() {
-
+        private void StopPathfinding()
+        {
             Farmer player = Game1.player;
-            footstepTimer.Stop();
+            StopTimers();
 
             ReadCurrentlySelectedObject();
             Utility.FixCharacterMovement();
             player.controller = null;
-            checkPathingTimer.Stop();
 
-            //Task unhalt = UnhaltNPCS();
-
-            if(LastTargetedTile != null) {
-                string faceDirection = Utility.GetDirection(player.getTileLocation(), LastTargetedTile.Value);
-                if (faceDirection == "North") {
-                    player.faceDirection(0);
-                }
-                if (faceDirection == "East") {
-                    player.faceDirection(1);
-                }
-                if (faceDirection == "South") {
-                    player.faceDirection(2);
-                }
-                if (faceDirection == "West") {
-                    player.faceDirection(3);
-                }
-            }
-
+            FacePlayerToLastTargetedTile();
         }
 
-        private void ReadCurrentlySelectedObject(bool readTileOnly = false) {
-            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
-                return;
+        private void StartTimers()
+        {
+            footstepTimer.Start();
+            checkPathingTimer.Start();
+        }
 
-            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects!.GetObjects();
+        private void StopTimers()
+        {
+            footstepTimer.Stop();
+            checkPathingTimer.Stop();
+        }
 
-            if (!(objects.ContainsKey(SelectedCategory!) && objects[SelectedCategory!].ContainsKey(SelectedObject!))) {
-                this.Mod.Output($"No Object Selected", true);
-                return;
+        private void FacePlayerToLastTargetedTile()
+        {
+            Farmer player = Game1.player;
+
+            if (LastTargetedTile == null) return;
+
+            string faceDirection = Utility.GetDirection(player.getTileLocation(), LastTargetedTile.Value);
+            switch (faceDirection)
+            {
+                case "North":
+                    player.faceDirection(0);
+                    break;
+                case "East":
+                    player.faceDirection(1);
+                    break;
+                case "South":
+                    player.faceDirection(2);
+                    break;
+                case "West":
+                    player.faceDirection(3);
+                    break;
             }
+        }
+
+
+        private void ReadCurrentlySelectedObject(bool readTileOnly = false)
+        {
+            if (!IsValidSelection())
+                return;
 
             Farmer player = Game1.player;
-            SpecialObject sObject = GetCurrentlySelectedObject()!;
+            SpecialObject? sObject = GetCurrentlySelectedObject();
 
             Vector2 playerTile = player.getTileLocation();
-            Vector2 sObjectTile = sObject.TileLocation;
+            Vector2? sObjectTile = sObject?.TileLocation;
 
-            string direction = Utility.GetDirection(playerTile, sObject.TileLocation);
-            string distance = Utility.GetDistance(playerTile, sObject.TileLocation).ToString();
-
-            this.Mod.Output(ReplacePlaceholders(readTileOnly ? this.ModConfig.OTReadSelectedObjectTileText : this.ModConfig.OTReadSelectedObjectText, playerTile, sObjectTile, direction, distance), true);
-
+            
+            if (sObject != null)
+            {
+                string direction = Utility.GetDirection(playerTile, sObject.TileLocation);
+                string distance = Utility.GetDistance(playerTile, sObject.TileLocation).ToString();
+                if (sObjectTile != null)
+                    Mod.Output(ReplacePlaceholders(readTileOnly ? ModConfig.OTReadSelectedObjectTileText : ModConfig.OTReadSelectedObjectText, playerTile, sObjectTile.Value, direction, distance), true);
+            }
         }
 
-        private string ReplacePlaceholders(string s, Vector2 playerTile, Vector2 sObjectTile, string direction, string distance) {
-            StringBuilder sb = new(s);
-
-            sb.Replace("{object}", SelectedObject);
-
-            sb.Replace("{objectX}", $"{sObjectTile.X}");
-            sb.Replace("{objectY}", $"{sObjectTile.Y}");
-            sb.Replace("{playerX}", $"{playerTile.X}");
-            sb.Replace("{playerY}", $"{playerTile.Y}");
-            sb.Replace("{direction}", $"{direction}");
-            sb.Replace("{distance}", $"{distance}");
-
-            return sb.ToString().ToLower();
+        private string ReplacePlaceholders(string s, Vector2 playerTile, Vector2 sObjectTile, string direction, string distance)
+        {
+            return s.ToLower()
+                .Replace("{object}", SelectedObject)
+                .Replace("{objectX}", $"{sObjectTile.X}")
+                .Replace("{objectY}", $"{sObjectTile.Y}")
+                .Replace("{playerX}", $"{playerTile.X}")
+                .Replace("{playerY}", $"{playerTile.Y}")
+                .Replace("{direction}", $"{direction}")
+                .Replace("{distance}", $"{distance}");
         }
 
-        private void CycleCategory(bool back = false) {
-
-            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
+        private void Cycle(bool cycleCategories, bool back = false)
+        {
+            if (!IsValidSelection())
                 return;
 
-            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects!.GetObjects();
+            var objects = TrackedObjects?.GetObjects();
+            string suffixText;
 
-            string[] object_keys = objects.Keys.ToArray();
-
-            if (!object_keys.Contains(SelectedCategory!)) {
-                this.Mod.Output("No Categories Found", true);
+            if (cycleCategories)
+            {
+                string[] categories = objects?.Keys.ToArray() ?? Array.Empty<string>();
+                suffixText = SelectedCategory is null ? string.Empty : Utility.DoCycle(ref SelectedCategory!, categories, back);
+                SetDefaultCategoryAndFocusedObject(setFirstObjectInCategory: true);
+            }
+            else
+            {
+                string[] objectKeys = SelectedCategory != null && objects?.ContainsKey(SelectedCategory) == true
+                    ? objects[SelectedCategory].Keys.ToArray()
+                    : Array.Empty<string>();
+                suffixText = SelectedObject is null ? string.Empty : Utility.DoCycle(ref SelectedObject!, objectKeys, back);
             }
 
-            string suffix_text = Utility.DoCycle(ref SelectedCategory!, object_keys, back);
-            this.SetFocusedObjectToFirstInCategory();
-
-            if (suffix_text.Length > 0) {
-                suffix_text = ", " + suffix_text;
-            }
-
-            this.Mod.Output($"{SelectedCategory!}, {SelectedObject!}" + suffix_text, true);
-
+            suffixText = suffixText.Length > 0 ? ", " + suffixText : string.Empty;
+            Mod.Output($"{SelectedCategory ?? "No Category"}, {SelectedObject ?? "No Object"}" + suffixText, true);
         }
 
-        private void CycleObjects(bool back = false) {
-
-            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
-                return;
-
-            SortedList<string, Dictionary<string, SpecialObject>> objects = TrackedObjects!.GetObjects();
-
-            string[] categories = objects.Keys.ToArray();
-
-            if (!categories.Contains(SelectedCategory!)) {
-                this.Mod.Output("No Categories Found", true);
-            }
-
-            string[] object_keys = objects[SelectedCategory!].Keys.ToArray();
-
-            string suffix_text = Utility.DoCycle(ref SelectedObject!, object_keys, back);
-
-            if(suffix_text.Length > 0) {
-                suffix_text = ", " + suffix_text;
-            }
-
-            this.Mod.Output($"{SelectedObject!}, {SelectedCategory!}" + suffix_text, true);
-
+        private SpecialObject? GetCurrentlySelectedObject()
+        {
+            return SelectedCategory != null && SelectedObject != null && TrackedObjects?.GetObjects()?.TryGetValue(SelectedCategory, out var categoryObjects) == true
+                ? categoryObjects.TryGetValue(SelectedObject, out var selectedObject) ? selectedObject : null
+                : null;
         }
 
-        private SpecialObject? GetCurrentlySelectedObject() {
-            if (TrackedObjects is not null && SelectedCategory is not null && SelectedObject is not null)
-                return TrackedObjects!.GetObjects()[SelectedCategory!][SelectedObject!];
-            return null;
-        }
-
-        private void SetFocusedObjectToFirstInCategory() {
-
-            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null)
-                return;
-
-            var objects = TrackedObjects!.GetObjects();
-
-            if(objects.ContainsKey(SelectedCategory!)) {
-                Dictionary<string, SpecialObject> cat_objects = objects[SelectedCategory];
-                SelectedObject = cat_objects.Keys.ToArray()[0];
+        private void SetDefaultCategoryAndFocusedObject(bool setFirstObjectInCategory = true)
+        {
+            var objects = TrackedObjects?.GetObjects();
+            if (objects?.Any() != true)
+            {
+                Mod.Output("No objects found.");
             }
+            else
+            {
+                SelectedCategory = objects.Keys.FirstOrDefault();
 
-        }
+                if (setFirstObjectInCategory && SelectedCategory != null)
+                {
+                    SelectedObject = objects.TryGetValue(SelectedCategory, out var catObjects)
+                        ? catObjects.Keys.FirstOrDefault()
+                        : null;
+                }
 
-        private void SetDefaultCategoryAndFocusedObject() {
-
-            if (TrackedObjects is null)
-                return;
-
-            var objects = TrackedObjects.GetObjects();
-            if (objects is not null && objects.Count < 1) {
-                this.Mod.Output("No objects found.");
-            } else {
-
-                SelectedCategory = objects.Keys[0];
-                
-                Dictionary<string, SpecialObject> cat_objects = objects[SelectedCategory];
-                SelectedObject = cat_objects.Keys.ToArray()[0];
-
-                this.Mod.Output($"Category: {SelectedCategory} | Object: {SelectedObject}");
-
+                string outputCategory = SelectedCategory ?? "No Category";
+                string outputObject = SelectedObject ?? "No Object";
+                Mod.Output($"Category: {outputCategory} | Object: {outputObject}");
             }
         }
 
-        internal void GetLocationObjects(bool reset_focus = true) {
-            //this.Mod.Output("mark1");
-            TrackedObjects tracked_objects = new(this.Mod);
-            tracked_objects.FindObjectsInArea(!this.sortByProxy);
-            this.TrackedObjects = tracked_objects;
+        internal void GetLocationObjects(bool resetFocus = true)
+        {
+            TrackedObjects trackedObjects = new(Mod);
+            trackedObjects.FindObjectsInArea(!sortByProxy);
+            TrackedObjects = trackedObjects;
 
-            if(!reset_focus && SelectedCategory is not null) {
-                if(!tracked_objects.GetObjects().ContainsKey(SelectedCategory)) {
-                    reset_focus = true;
+            var objects = trackedObjects.GetObjects();
+
+            if (!resetFocus && SelectedCategory != null)
+            {
+                if (!objects.ContainsKey(SelectedCategory))
+                {
+                    resetFocus = true;
                 }
             }
 
-            //this.Mod.Output("mark3");
-            if(reset_focus) {
-                this.SetDefaultCategoryAndFocusedObject();
+            if (resetFocus)
+            {
+                SetDefaultCategoryAndFocusedObject();
             }
 
-            if (TrackedObjects is null || SelectedCategory is null || SelectedObject is null) {
+            if (TrackedObjects == null || SelectedCategory == null || SelectedObject == null)
+            {
                 return;
-            } else if(!tracked_objects.GetObjects()[SelectedCategory].ContainsKey(SelectedObject) && tracked_objects!.GetObjects().ContainsKey(SelectedCategory)) {
-                this.SetFocusedObjectToFirstInCategory();
             }
-
+            else
+            {
+                if (!objects.ContainsKey(SelectedCategory) || !objects[SelectedCategory].ContainsKey(SelectedObject))
+                {
+                    SetDefaultCategoryAndFocusedObject(false);
+                }
+            }
         }
     }
 }

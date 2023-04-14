@@ -24,7 +24,7 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
             List<FarmAnimal>? farmAnimals = null;
 
             if (location is Farm farm)
-                farmAnimals = farm.animals != null ? farm.animals.Values.ToList() : null;
+                farmAnimals = farm.animals?.Values.ToList();
             else if (location is AnimalHouse)
                 farmAnimals = (location as AnimalHouse)!.animals.Values.ToList();
 

@@ -10,8 +10,22 @@ using System.Threading.Tasks;
 namespace AccessibleTiles.Modules.ObjectTracker {
     internal static class Utility {
 
-        public static double GetDistance(Vector2 player, Vector2 point) {
-            double value = Math.Sqrt(Math.Pow(((double)point.X - (double)player.X), 2) + Math.Pow(((double)point.Y - (double)player.Y), 2));
+        public static double GetDistance(Vector2? player, Vector2? point)
+        {
+            if (player == null && point == null)
+            {
+                throw new ArgumentException("Both player and point must not be null.");
+            }
+            else if (player == null)
+            {
+                throw new ArgumentNullException(nameof(player), "Player must not be null.");
+            }
+            else if (point == null)
+            {
+                throw new ArgumentNullException(nameof(point), "Point must not be null.");
+            }
+
+            double value = Math.Sqrt(Math.Pow((point.Value.X - player.Value.X), 2) + Math.Pow((point.Value.Y - player.Value.Y), 2));
             return Math.Round(value);
         }
 
@@ -53,9 +67,7 @@ namespace AccessibleTiles.Modules.ObjectTracker {
             Game1.player.FarmerSprite.PauseForSingleAnimation = false;
             if (Game1.player.CurrentTool is FishingRod fishingRod)
                 fishingRod.isFishing = false;
-            if (Game1.player.mount != null) {
-                Game1.player.mount.dismount();
-            }
+            Game1.player.mount?.dismount();
         }
 
         public static string DoCycle(ref string valueToUpdate, string[] object_keys, bool back = false) {
@@ -102,10 +114,11 @@ namespace AccessibleTiles.Modules.ObjectTracker {
 
         }
 
-        public static Vector2? GetClosestTilePath(Vector2 tilePosition) {
+        public static Vector2? GetClosestTilePath(Vector2? tilePosition) {
 
-            Vector2 topLeft = new(tilePosition.X - 1, tilePosition.Y - 1);
-            Vector2 bottomRight = new(tilePosition.X + 1, tilePosition.Y + 1);
+            if (tilePosition == null) return null;
+            Vector2 topLeft = new(tilePosition.Value.X - 1, tilePosition.Value.Y - 1);
+            Vector2 bottomRight = new(tilePosition.Value.X + 1, tilePosition.Value.Y + 1);
 
             Vector2? closestTile = null;
             double? closestTileDistance = null;

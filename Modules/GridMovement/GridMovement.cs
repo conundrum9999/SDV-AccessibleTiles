@@ -87,7 +87,7 @@ namespace AccessibleTiles.Modules.GridMovement {
             Rectangle position = new((int)tileLocation.X * Game1.tileSize, (int)tileLocation.Y * Game1.tileSize, Game1.tileSize, Game1.tileSize);
             Warp warp = location.isCollidingWithWarpOrDoor(position, Game1.player);
             if(warp != null) {
-                if (isDoorAtTile((int)tileLocation.X, (int)tileLocation.Y))
+                if (IsDoorAtTile((int)tileLocation.X, (int)tileLocation.Y))
                 {
                     // Manually check for door and pressActionButton() method instead of warping (warping also works when the door is locked, for example it warps to the Pierre's shop before it's opening time)
                     Mod.Output("Collides with Door");
@@ -128,7 +128,7 @@ namespace AccessibleTiles.Modules.GridMovement {
 
         }
 
-        private static Boolean isDoorAtTile(int x, int y)
+        private static Boolean IsDoorAtTile(int x, int y)
         {
             Point tilePoint = new(x, y);
             StardewValley.Network.NetPointDictionary<string, Netcode.NetString> doorList = Game1.currentLocation.doors;

@@ -20,7 +20,7 @@ namespace AccessibleTiles.Modules.ObjectTracker.TileTrackers {
 
             if (arg == null) return;
 
-            Dictionary<Vector2, (string name, string category)> scannedTiles = (arg as StardewAccessInterface)!.SearchLocation();
+            Dictionary<Vector2, (string name, string category)> scannedTiles = (arg as IStardewAccessInterface)!.SearchLocation();
 
             /* Categorise the scanned tiles into groups
              *

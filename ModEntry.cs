@@ -70,7 +70,7 @@ namespace AccessibleTiles {
             }
             
             // Automatically refreshes the object tracker when the number of objects in current map changes.
-            if (e.IsMultipleOf(15) && Game1.currentLocation != null && Config.OTAutoRefreshing)
+            if (e.IsMultipleOf(15) && Game1.currentLocation != null && Config != null && Config.OTAutoRefreshing)
             {
                 int currentDebris = Game1.currentLocation.debris.Count;
                 int currentObjects = Game1.currentLocation.objects.Count();
@@ -88,7 +88,7 @@ namespace AccessibleTiles {
                     previousLargeTerrainFeatures = currentLargeTerrainFeatures;
                     
                     Output("Refreshing object tracker...", false);
-                    ObjectTracker!.GetLocationObjects(reset_focus: false);
+                    ObjectTracker!.GetLocationObjects(resetFocus: false);
                 }
             }
         }
@@ -103,7 +103,7 @@ namespace AccessibleTiles {
                 return;
 
             GridMovement!.PlayerWarped(sender, e);
-            ObjectTracker!.GetLocationObjects(reset_focus: true);
+            ObjectTracker!.GetLocationObjects(resetFocus: true);
         }
 
         private void Input_ButtonsChanged(object? sender, ButtonsChangedEventArgs e) {
@@ -120,7 +120,7 @@ namespace AccessibleTiles {
 
             } else {
 
-                ObjectTracker.HandleKeys(sender, e);
+                ObjectTracker?.HandleKeys(sender, e);
 
             }
 

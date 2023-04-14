@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 namespace AccessibleTiles.Integrations {
-    public interface StardewAccessInterface {
+    public interface IStardewAccessInterface {
 
         /// <summary>
         /// Search the area using Breadth First Search algorithm(BFS).
